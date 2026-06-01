@@ -1,3 +1,281 @@
+## ===================================================================
+## CONFIGURAÇÃO GERAL - SPRING BOOT
+## ===================================================================
+#spring:
+#  # -------------------------------------------------------------------
+#  # DATASOURCE (ORACLE PRODUÇÃO)
+#  # -------------------------------------------------------------------
+#  datasource:
+#    url: ${DB_URL:jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL}
+#    driver-class-name: oracle.jdbc.OracleDriver
+#    username: ${DB_USERNAME:rm562267}
+#    password: ${DB_PASSWORD:fiap26}
+#    hikari:
+#      pool-name: CarbonTrackHikariPool
+#      maximum-pool-size: 10
+#      minimum-idle: 2
+#      connection-timeout: 30000
+#
+#  # -------------------------------------------------------------------
+#  # JPA / HIBERNATE
+#  # -------------------------------------------------------------------
+#  jpa:
+#    open-in-view: false
+#    show-sql: true
+#    hibernate:
+#      ddl-auto: update
+#      naming:
+#        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+#    properties:
+#      hibernate:
+#        format_sql: true
+#        use_sql_comments: true
+#        jdbc:
+#          batch_size: 50
+#
+#  # -------------------------------------------------------------------
+#  # JACKSON (JSON)
+#  # -------------------------------------------------------------------
+#  jackson:
+#    serialization:
+#      indent-output: true
+#      write-dates-as-timestamps: false
+#    deserialization:
+#      fail-on-unknown-properties: false
+#    default-property-inclusion: non_null
+#    time-zone: America/Sao_Paulo
+#
+#  # -------------------------------------------------------------------
+#  # MVC
+#  # -------------------------------------------------------------------
+#  mvc:
+#    problemdetails:
+#      enabled: true
+#
+#  # -------------------------------------------------------------------
+#  # CACHE
+#  # -------------------------------------------------------------------
+#  cache:
+#    type: simple
+#    cache-names:
+#      - dadosSatelite
+#      - creditoCarbono
+#
+## ===================================================================
+## SERVIDOR
+## ===================================================================
+#server:
+#  port: 8080
+#  compression:
+#    enabled: true
+#
+## ===================================================================
+## SPRINGDOC (SWAGGER)
+## ===================================================================
+#springdoc:
+#  api-docs:
+#    path: /api-docs
+#  swagger-ui:
+#    path: /swagger-ui.html
+#
+## ===================================================================
+## ACTUATOR
+## ===================================================================
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,metrics
+#      base-path: /actuator
+#  endpoint:
+#    health:
+#      show-details: always
+#
+## ===================================================================
+## LOGGING
+## ===================================================================
+#logging:
+#  level:
+#    root: INFO
+#    br.com.fiap.javaadv.backend: DEBUG
+#    br.com.fiap.javaadv.backend.integration: DEBUG
+#
+## ===================================================================
+## APLICAÇÃO
+## ===================================================================
+#app:
+#  db:
+#    seed-enabled: true
+#
+## ===================================================================
+## PLANET INSIGHTS API CONFIGURATION
+## ===================================================================
+#planet:
+#  api:
+#    key: 7c0d34d7-5bcc-4250-a255-d42e4727c41b
+#    secret: ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H
+#    url: https://api.planet.com/compute/ops
+#    auth:
+#      url: https://auth.planet.com
+#
+#  features:
+#    - biomass
+#    - ndvi
+#    - evi
+#    - landcover
+#
+#  max:
+#    cloud:
+#      cover: 20
+#    area:
+#      hectares: 10000
+#
+#  cache:
+#    dias: 30
+#
+#  time:
+#    period:
+#      dias: 30
+#
+#  mock:
+#    enabled: ${PLANET_MOCK_ENABLED:false}
+#
+#  processing:
+#    resolution: 10
+#    aggregation: mean
+#    timeout: 30000
+#
+## ===================================================================
+## CALCULADORA DE CARBONO
+## ===================================================================
+#calculadora:
+#  carbono:
+#    fator_conversao: 0.47
+#    biomassa_media_ton_ha: 150.0
+#    ajustes:
+#      floresta_densa: 1.2
+#      floresta_aberta: 0.9
+#      cerrado: 0.7
+#      pastagem: 0.3
+#      agricultura: 0.4
+#    valor_minimo: 1.0
+#
+## ===================================================================
+## CRÉDITO DE CARBONO
+## ===================================================================
+#credito:
+#  registro:
+#    emissao_automatica: true
+#    permite_edicao: false
+#  valor_mercado:
+#    preco_tonelada_usd: ${PRECO_CARBONO_USD:5.0}
+#
+## ===================================================================
+## PERFIL DEV (H2)
+## ===================================================================
+#---
+#spring:
+#  config:
+#    activate:
+#      on-profile: dev
+#
+#  datasource:
+#    url: jdbc:h2:mem:carbontrackdb;MODE=Oracle;DATABASE_TO_UPPER=false
+#    driver-class-name: org.h2.Driver
+#    username: sa
+#    password:
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#
+#  h2:
+#    console:
+#      enabled: true
+#      path: /h2-console
+#
+#app:
+#  db:
+#    seed-enabled: true
+#
+#planet:
+#  mock:
+#    enabled: true
+#
+#logging:
+#  level:
+#    br.com.fiap.javaadv.backend: DEBUG
+#
+## ===================================================================
+## PERFIL PROD (ORACLE + PLANET API REAL)
+## ===================================================================
+#---
+#spring:
+#  config:
+#    activate:
+#      on-profile: prod
+#
+#  jpa:
+#    show-sql: false
+#    hibernate:
+#      ddl-auto: update
+#
+#  datasource:
+#    hikari:
+#      maximum-pool-size: 20
+#
+#app:
+#  db:
+#    seed-enabled: true
+#
+#planet:
+#  mock:
+#    enabled: false
+#  max:
+#    cloud:
+#      cover: 15
+#  cache:
+#    dias: 30
+#
+#logging:
+#  level:
+#    br.com.fiap.javaadv.backend: INFO
+#
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,metrics,prometheus
+#
+## ===================================================================
+## PERFIL TEST
+## ===================================================================
+#---
+#spring:
+#  config:
+#    activate:
+#      on-profile: test
+#
+#  datasource:
+#    url: jdbc:h2:mem:testdb;MODE=Oracle;DATABASE_TO_UPPER=false
+#    driver-class-name: org.h2.Driver
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: false
+#
+#planet:
+#  mock:
+#    enabled: true
+#  cache:
+#    dias: 1
+#
+#logging:
+#  level:
+#    br.com.fiap.javaadv.backend: WARN
+
 # ===================================================================
 # CONFIGURAÇÃO GERAL - SPRING BOOT
 # ===================================================================
@@ -23,14 +301,15 @@ spring:
     open-in-view: false
     show-sql: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
-        jdbc.batch_size: 50
+        jdbc:
+          batch_size: 50
 
   # -------------------------------------------------------------------
   # JACKSON (JSON)
@@ -51,6 +330,15 @@ spring:
     problemdetails:
       enabled: true
 
+  # -------------------------------------------------------------------
+  # CACHE
+  # -------------------------------------------------------------------
+  cache:
+    type: simple
+    cache-names:
+      - dadosSatelite
+      - creditoCarbono
+
 # ===================================================================
 # SERVIDOR
 # ===================================================================
@@ -60,7 +348,7 @@ server:
     enabled: true
 
 # ===================================================================
-# SPRINGDOC (OPENAPI / SWAGGER)
+# SPRINGDOC (SWAGGER)
 # ===================================================================
 springdoc:
   api-docs:
@@ -69,7 +357,7 @@ springdoc:
     path: /swagger-ui.html
 
 # ===================================================================
-# ACTUATOR (MONITORAMENTO)
+# ACTUATOR
 # ===================================================================
 management:
   endpoints:
@@ -88,13 +376,47 @@ logging:
   level:
     root: INFO
     br.com.fiap.javaadv.backend: DEBUG
+    br.com.fiap.javaadv.backend.integration: DEBUG
 
 # ===================================================================
-# APLICAÇÃO (SEED)
+# APLICAÇÃO
 # ===================================================================
 app:
   db:
-    seed-enabled: true  # Altere para 'true' uma vez para criar tabelas
+    seed-enabled: true
+
+# ===================================================================
+# CALCULADORA DE CARBONO
+# ===================================================================
+calculadora:
+  carbono:
+    # Fatores de conversão
+    fator_conversao: 0.47
+    biomassa_media_ton_ha: 150.0
+
+    # Sequestro mensal (tCO₂ por hectare por mês)
+    sequestro_mensal_ton_ha: 0.5
+
+    # Valor mínimo para evitar valores negativos
+    valor_minimo: 1.0
+
+    # Ajustes por tipo de vegetação
+    ajustes:
+      floresta_densa: 1.2
+      floresta_aberta: 0.9
+      cerrado: 0.7
+      pastagem: 0.3
+      agricultura: 0.4
+
+# ===================================================================
+# CRÉDITO DE CARBONO
+# ===================================================================
+credito:
+  registro:
+    emissao_automatica: true
+    permite_edicao: false
+  valor_mercado:
+    preco_tonelada_usd: ${PRECO_CARBONO_USD:5.0}
 
 # ===================================================================
 # PERFIL DEV (H2)
@@ -113,7 +435,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
 
   h2:
@@ -121,13 +443,20 @@ spring:
       enabled: true
       path: /h2-console
 
-  # Seed ativo por padrão no dev
-  app:
-    db:
-      seed-enabled: true
+app:
+  db:
+    seed-enabled: true
+
+calculadora:
+  carbono:
+    sequestro_mensal_ton_ha: 0.5
+
+logging:
+  level:
+    br.com.fiap.javaadv.backend: DEBUG
 
 # ===================================================================
-# PERFIL PROD
+# PERFIL PROD (ORACLE)
 # ===================================================================
 ---
 spring:
@@ -138,12 +467,52 @@ spring:
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
 
   datasource:
     hikari:
       maximum-pool-size: 20
 
-  app:
-    db:
-      seed-enabled: true
+app:
+  db:
+    seed-enabled: false
+
+calculadora:
+  carbono:
+    sequestro_mensal_ton_ha: 0.5
+
+logging:
+  level:
+    br.com.fiap.javaadv.backend: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+# ===================================================================
+# PERFIL TEST
+# ===================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=Oracle;DATABASE_TO_UPPER=false
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+calculadora:
+  carbono:
+    sequestro_mensal_ton_ha: 0.5
+
+logging:
+  level:
+    br.com.fiap.javaadv.backend: WARN
