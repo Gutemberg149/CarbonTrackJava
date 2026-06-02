@@ -3,9 +3,13 @@ package br.com.fiap.javaadv.backend.services;
 import br.com.fiap.javaadv.backend.datasource.repositories.CreditoCarbonoRepository;
 import br.com.fiap.javaadv.backend.datasource.repositories.PropriedadeRepository;
 import br.com.fiap.javaadv.backend.datasource.repositories.UserRepository;
+import br.com.fiap.javaadv.backend.domainmodel.embeddables.Endereco;
 import br.com.fiap.javaadv.backend.domainmodel.entities.CreditoCarbono;
 import br.com.fiap.javaadv.backend.domainmodel.entities.Propriedade;
 import br.com.fiap.javaadv.backend.domainmodel.entities.User;
+import br.com.fiap.javaadv.backend.resources.CreditoCarbonoResource;
+import br.com.fiap.javaadv.backend.resources.PropriedadeResource;
+import br.com.fiap.javaadv.backend.resources.UserResource;
 import br.com.fiap.javaadv.backend.resources.dtos.PropriedadeRequestDTO;
 import br.com.fiap.javaadv.backend.resources.dtos.PropriedadeResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +25,9 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Slf4j
 @Service
@@ -62,6 +69,14 @@ public class PropriedadeService {
             log.info("📅 Data de aquisição não informada, usando data atual: {}/{}", mesAquisicao, anoAquisicao);
         }
 
+        // Criar objeto Endereco simplificado
+        Endereco endereco = Endereco.builder()
+                .endereco(request.getEndereco())
+                .cidade(request.getCidade())
+                .estado(request.getEstado())
+                .cep(request.getCep())
+                .build();
+
         String geometriaWkt = null;
         Double areaHectares = null;
         Double carbonoEstimado = null;
@@ -74,7 +89,6 @@ public class PropriedadeService {
             Polygon polygon = converterWktParaPolygon(geometriaWkt);
             if (polygon != null) {
                 areaHectares = calcularAreaHectaresCorreta(polygon);
-                // Usar o método que considera tempo de posse
                 carbonoEstimado = calculadoraCarbonoService.calcularEstoquePorTempo(polygon, anoAquisicao, mesAquisicao);
                 log.info("✅ Geometria processada - Área: {} ha, Carbono acumulado: {} tCO₂",
                         formatarDuasCasas(areaHectares),
@@ -90,7 +104,6 @@ public class PropriedadeService {
             if (polygon != null) {
                 geometriaWkt = polygonToWkt(polygon);
                 areaHectares = calcularAreaHectaresCorreta(polygon);
-                // Usar o método que considera tempo de posse
                 carbonoEstimado = calculadoraCarbonoService.calcularEstoquePorTempo(polygon, anoAquisicao, mesAquisicao);
                 log.info("✅ Geometria processada - Área: {} ha, Carbono acumulado: {} tCO₂",
                         formatarDuasCasas(areaHectares),
@@ -100,10 +113,7 @@ public class PropriedadeService {
 
         Propriedade propriedade = Propriedade.builder()
                 .nome(request.getNome())
-                .endereco(request.getEndereco())
-                .cidade(request.getCidade())
-                .estado(request.getEstado())
-                .cep(request.getCep())
+                .endereco(endereco)
                 .anoAquisicao(anoAquisicao)
                 .mesAquisicao(mesAquisicao)
                 .areaHectares(areaHectares)
@@ -157,12 +167,20 @@ public class PropriedadeService {
         Propriedade propriedade = propriedadeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Propriedade não encontrada com ID: " + id));
 
-        // Atualizar campos básicos
+        // Atualizar endereço simplificado
+        Endereco enderecoAtualizado = Endereco.builder()
+                .endereco(request.getEndereco() != null ? request.getEndereco() :
+                        propriedade.getEndereco() != null ? propriedade.getEndereco().getEndereco() : null)
+                .cidade(request.getCidade() != null ? request.getCidade() :
+                        propriedade.getEndereco() != null ? propriedade.getEndereco().getCidade() : null)
+                .estado(request.getEstado() != null ? request.getEstado() :
+                        propriedade.getEndereco() != null ? propriedade.getEndereco().getEstado() : null)
+                .cep(request.getCep() != null ? request.getCep() :
+                        propriedade.getEndereco() != null ? propriedade.getEndereco().getCep() : null)
+                .build();
+
+        propriedade.setEndereco(enderecoAtualizado);
         propriedade.setNome(request.getNome());
-        propriedade.setEndereco(request.getEndereco());
-        propriedade.setCidade(request.getCidade());
-        propriedade.setEstado(request.getEstado());
-        propriedade.setCep(request.getCep());
 
         boolean geometriaModificada = false;
         Double novaArea = null;
@@ -348,27 +366,40 @@ public class PropriedadeService {
             }
         }
 
-        // Formatar números com 2 casas decimais
         Double areaFormatada = formatarDuasCasas(propriedade.getAreaHectares());
         Double carbonoFormatado = formatarDuasCasas(propriedade.getCarbonoEstimado());
 
-        return new PropriedadeResponseDTO(
-                propriedade.getId(),
-                propriedade.getNome(),
-                propriedade.getEndereco(),
-                propriedade.getCidade(),
-                propriedade.getEstado(),
-                propriedade.getCep(),
-                propriedade.getAnoAquisicao(),
-                propriedade.getMesAquisicao(),
-                areaFormatada,
-                carbonoFormatado,
-                geometriaWkt,
-                geometriaGeoJson,
-                propriedade.getDono() != null ? propriedade.getDono().getId() : null,
-                propriedade.getDono() != null ? propriedade.getDono().getNome() : null,
-                propriedade.getDono() != null ? propriedade.getDono().getEmail() : null
-        );
+        PropriedadeResponseDTO dto = PropriedadeResponseDTO.builder()
+                .id(propriedade.getId())
+                .nome(propriedade.getNome())
+                .endereco(propriedade.getEndereco())
+                .anoAquisicao(propriedade.getAnoAquisicao())
+                .mesAquisicao(propriedade.getMesAquisicao())
+                .areaHectares(areaFormatada)
+                .carbonoEstimado(carbonoFormatado)
+                .geometriaWkt(geometriaWkt)
+                .geometriaGeoJson(geometriaGeoJson)
+                .donoId(propriedade.getDono() != null ? propriedade.getDono().getId() : null)
+                .donoNome(propriedade.getDono() != null ? propriedade.getDono().getNome() : null)
+                .donoEmail(propriedade.getDono() != null ? propriedade.getDono().getEmail() : null)
+                .build();
+
+        try {
+            dto.add(linkTo(methodOn(PropriedadeResource.class).getById(propriedade.getId())).withSelfRel());
+            dto.add(linkTo(methodOn(PropriedadeResource.class).findAll()).withRel("all-properties"));
+
+            if (propriedade.getDono() != null) {
+                dto.add(linkTo(methodOn(UserResource.class).getById(propriedade.getDono().getId())).withRel("owner"));
+            }
+
+            dto.add(linkTo(methodOn(CreditoCarbonoResource.class).findByPropriedade(propriedade.getId())).withRel("credits"));
+            dto.add(linkTo(methodOn(PropriedadeResource.class).update(propriedade.getId(), null)).withRel("update"));
+            dto.add(linkTo(methodOn(PropriedadeResource.class).delete(propriedade.getId())).withRel("delete"));
+        } catch (Exception e) {
+            log.warn("Erro ao adicionar links HATEOAS: {}", e.getMessage());
+        }
+
+        return dto;
     }
 
     private Map<String, Object> polygonToGeoJson(Polygon polygon) {

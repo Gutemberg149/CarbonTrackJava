@@ -1,6 +1,7 @@
 package br.com.fiap.javaadv.backend.infrastructure;
 
 import br.com.fiap.javaadv.backend.datasource.repositories.*;
+import br.com.fiap.javaadv.backend.domainmodel.embeddables.Endereco;
 import br.com.fiap.javaadv.backend.domainmodel.entities.*;
 import br.com.fiap.javaadv.backend.services.CalculadoraCarbonoService;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +81,6 @@ public class DataLoader {
             int mesAquisicao = hoje.getMonthValue();
 
             double areaHectares = calculadoraService.calcularAreaHectares(polygon);
-            // Usar o método correto com ano e mês
             double carbonoEstimado = calculadoraService.calcularEstoquePorTempo(polygon, anoAquisicao, mesAquisicao);
 
             log.info("📊 Cálculos realizados:");
@@ -89,14 +89,21 @@ public class DataLoader {
             log.info("   🌿 Carbono acumulado: {} tCO₂", String.format("%.2f", carbonoEstimado));
 
             // ============================================
-            // 4. Criar propriedade
+            // 4. Criar objeto Endereco simplificado
             // ============================================
-            Propriedade propriedade = Propriedade.builder()
-                    .nome("Fazenda Mata Atlântica")
+            Endereco endereco = Endereco.builder()
                     .endereco("Estrada Rural, 100")
                     .cidade("São Paulo")
                     .estado("SP")
                     .cep("01234567")
+                    .build();
+
+            // ============================================
+            // 5. Criar propriedade
+            // ============================================
+            Propriedade propriedade = Propriedade.builder()
+                    .nome("Fazenda Mata Atlântica")
+                    .endereco(endereco)
                     .anoAquisicao(anoAquisicao)
                     .mesAquisicao(mesAquisicao)
                     .areaHectares(areaHectares)
@@ -109,7 +116,7 @@ public class DataLoader {
             log.info("✅ Propriedade criada: {} (ID: {})", propriedade.getNome(), propriedade.getId());
 
             // ============================================
-            // 5. Criar crédito de carbono
+            // 6. Criar crédito de carbono
             // ============================================
             CreditoCarbono credito = CreditoCarbono.builder()
                     .quantidade(carbonoEstimado)
@@ -123,7 +130,7 @@ public class DataLoader {
                     credito.getId());
 
             // ============================================
-            // 6. Resumo final
+            // 7. Resumo final
             // ============================================
             log.info("========================================");
             log.info("🎉 SEED CONCLUÍDO COM SUCESSO!");

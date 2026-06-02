@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -17,6 +19,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Slf4j
 @RestController
@@ -34,19 +39,27 @@ public class PropriedadeResource {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
-    public ResponseEntity<PropriedadeResponseDTO> create(@Valid @RequestBody PropriedadeRequestDTO req) {
+    public ResponseEntity<EntityModel<PropriedadeResponseDTO>> create(@Valid @RequestBody PropriedadeRequestDTO req) {
         log.info("POST /propriedades - Recebendo requisição para criar propriedade: {}", req.getNome());
 
         PropriedadeResponseDTO saved = service.salvar(req);
 
-        // Para RECORD: use saved.id() em vez de saved.getId()
+        // Usar getter em vez de id() direto
+        EntityModel<PropriedadeResponseDTO> entityModel = EntityModel.of(saved);
+
+        // Adicionar links usando getter
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).getById(saved.getId())).withSelfRel());
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).findAll()).withRel("all-properties"));
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).update(saved.getId(), null)).withRel("update"));
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).delete(saved.getId())).withRel("delete"));
+
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(saved.id())  // ← CORRIGIDO: .id() não .getId()
+                .buildAndExpand(saved.getId())
                 .toUri();
 
-        log.info("Propriedade criada com sucesso. ID: {}", saved.id());  // ← CORRIGIDO
-        return ResponseEntity.created(uri).body(saved);
+        log.info("Propriedade criada com sucesso. ID: {}", saved.getId());
+        return ResponseEntity.created(uri).body(entityModel);
     }
 
     @GetMapping
@@ -54,9 +67,16 @@ public class PropriedadeResource {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     })
-    public ResponseEntity<List<PropriedadeResponseDTO>> findAll() {
+    public ResponseEntity<CollectionModel<PropriedadeResponseDTO>> findAll() {
         log.info("GET /propriedades - Listando todas as propriedades");
-        return ResponseEntity.ok(service.listarTodas());
+
+        List<PropriedadeResponseDTO> propriedades = service.listarTodas();
+
+        CollectionModel<PropriedadeResponseDTO> collectionModel = CollectionModel.of(propriedades);
+        collectionModel.add(linkTo(methodOn(PropriedadeResource.class).findAll()).withSelfRel());
+        collectionModel.add(linkTo(methodOn(PropriedadeResource.class).create(null)).withRel("create"));
+
+        return ResponseEntity.ok(collectionModel);
     }
 
     @GetMapping("/{id}")
@@ -65,9 +85,18 @@ public class PropriedadeResource {
             @ApiResponse(responseCode = "200", description = "Propriedade encontrada"),
             @ApiResponse(responseCode = "404", description = "Propriedade não encontrada")
     })
-    public ResponseEntity<PropriedadeResponseDTO> getById(@PathVariable UUID id) {
+    public ResponseEntity<EntityModel<PropriedadeResponseDTO>> getById(@PathVariable UUID id) {
         log.info("GET /propriedades/{} - Buscando propriedade", id);
-        return ResponseEntity.ok(service.buscarPorId(id));
+
+        PropriedadeResponseDTO dto = service.buscarPorId(id);
+
+        EntityModel<PropriedadeResponseDTO> entityModel = EntityModel.of(dto);
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).getById(id)).withSelfRel());
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).findAll()).withRel("all-properties"));
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).update(id, null)).withRel("update"));
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).delete(id)).withRel("delete"));
+
+        return ResponseEntity.ok(entityModel);
     }
 
     @PutMapping("/{id}")
@@ -77,11 +106,18 @@ public class PropriedadeResource {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "404", description = "Propriedade não encontrada")
     })
-    public ResponseEntity<PropriedadeResponseDTO> update(
+    public ResponseEntity<EntityModel<PropriedadeResponseDTO>> update(
             @PathVariable UUID id,
             @Valid @RequestBody PropriedadeRequestDTO req) {
         log.info("PUT /propriedades/{} - Atualizando propriedade", id);
-        return ResponseEntity.ok(service.atualizar(id, req));
+
+        PropriedadeResponseDTO updated = service.atualizar(id, req);
+
+        EntityModel<PropriedadeResponseDTO> entityModel = EntityModel.of(updated);
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).getById(id)).withSelfRel());
+        entityModel.add(linkTo(methodOn(PropriedadeResource.class).findAll()).withRel("all-properties"));
+
+        return ResponseEntity.ok(entityModel);
     }
 
     @DeleteMapping("/{id}")
