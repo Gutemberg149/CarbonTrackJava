@@ -2,9 +2,7 @@
 # CONFIGURAÇÃO GERAL - SPRING BOOT
 # ===================================================================
 spring:
-  # -------------------------------------------------------------------
-  # DATASOURCE (ORACLE PRODUÇÃO)
-  # -------------------------------------------------------------------
+  # Otimização para nuvem: timeout de conexão
   datasource:
     url: ${DB_URL:jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL}
     driver-class-name: oracle.jdbc.OracleDriver
@@ -15,13 +13,11 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
       connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
-  # -------------------------------------------------------------------
-  # JPA / HIBERNATE
-  # -------------------------------------------------------------------
   jpa:
     open-in-view: false
-    show-sql: true
     hibernate:
       ddl-auto: update
       naming:
@@ -30,12 +26,11 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: true
-        jdbc:
-          batch_size: 50
+        jdbc.batch_size: 50
+        # Otimização: evita lock no banco para leitura
+        order_inserts: true
+        order_updates: true
 
-  # -------------------------------------------------------------------
-  # JACKSON (JSON)
-  # -------------------------------------------------------------------
   jackson:
     serialization:
       indent-output: true
@@ -45,36 +40,24 @@ spring:
     default-property-inclusion: non_null
     time-zone: America/Sao_Paulo
 
-  # -------------------------------------------------------------------
-  # MVC
-  # -------------------------------------------------------------------
   mvc:
     problemdetails:
       enabled: true
 
-  # -------------------------------------------------------------------
-  # CACHE
-  # -------------------------------------------------------------------
   cache:
     type: simple
-    cache-names:
-      - dadosSatelite
-      - creditoCarbono
 
-# ===================================================================
-# SERVIDOR (Render define a porta automaticamente)
-# ===================================================================
+# Configuração de rede para render
 server:
   port: ${PORT:8080}
+  address: 0.0.0.0
   compression:
     enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
   error:
     include-message: always
     include-binding-errors: always
 
-# ===================================================================
-# SPRINGDOC (SWAGGER)
-# ===================================================================
 springdoc:
   api-docs:
     path: /api-docs
@@ -83,9 +66,6 @@ springdoc:
     try-it-out-enabled: true
     operations-sorter: method
 
-# ===================================================================
-# ACTUATOR
-# ===================================================================
 management:
   endpoints:
     web:
@@ -95,32 +75,22 @@ management:
   endpoint:
     health:
       show-details: always
-    info:
-      enabled: true
 
-# ===================================================================
-# LOGGING
-# ===================================================================
 logging:
   level:
     root: INFO
     br.com.fiap.javaadv.backend: DEBUG
-    br.com.fiap.javaadv.backend.integration: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 # ===================================================================
-# APLICAÇÃO
+# CONFIGURAÇÕES DE NEGÓCIO (Calculadora)
 # ===================================================================
 app:
-  db:
-    seed-enabled: true
+  db.seed-enabled: true
   name: CarbonTrack API
   version: 1.0.0
 
-# ===================================================================
-# CALCULADORA DE CARBONO
-# ===================================================================
 calculadora:
   carbono:
     fator_conversao: 0.47
@@ -134,9 +104,6 @@ calculadora:
       pastagem: 0.3
       agricultura: 0.4
 
-# ===================================================================
-# CRÉDITO DE CARBONO
-# ===================================================================
 credito:
   registro:
     emissao_automatica: true
@@ -145,121 +112,35 @@ credito:
     preco_tonelada_usd: ${PRECO_CARBONO_USD:5.0}
 
 # ===================================================================
-# INFO (para actuator/info)
-# ===================================================================
-info:
-  app:
-    name: CarbonTrack API
-    description: API para gestão de créditos de carbono
-    version: 1.0.0
-    java:
-      version: ${java.version}
-
-# ===================================================================
-# PERFIL DEV (H2)
+# PERFIS
 # ===================================================================
 ---
 spring:
-  config:
-    activate:
-      on-profile: dev
-
+  config.activate.on-profile: dev
   datasource:
     url: jdbc:h2:mem:carbontrackdb;MODE=Oracle;DATABASE_TO_UPPER=false
     driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
   jpa:
-    hibernate:
-      ddl-auto: create-drop
+    hibernate.ddl-auto: create-drop
     show-sql: true
+  h2.console.enabled: true
 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
-app:
-  db:
-    seed-enabled: true
-
-calculadora:
-  carbono:
-    sequestro_mensal_ton_ha: 0.5
-
-logging:
-  level:
-    br.com.fiap.javaadv.backend: DEBUG
-
-server:
-  port: 8080
-
-# ===================================================================
-# PERFIL PROD (ORACLE + RENDER)
-# ===================================================================
 ---
 spring:
-  config:
-    activate:
-      on-profile: prod
-
+  config.activate.on-profile: prod
   jpa:
     show-sql: false
-    hibernate:
-      ddl-auto: validate
-
+    hibernate.ddl-auto: validate
   datasource:
     hikari:
       maximum-pool-size: 20
-      connection-timeout: 60000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+  logging.level.org.springframework.web: WARN
+  management.endpoints.web.exposure.include: health,info,metrics,prometheus
 
-app:
-  db:
-    seed-enabled: false
-
-calculadora:
-  carbono:
-    sequestro_mensal_ton_ha: 0.5
-
-logging:
-  level:
-    br.com.fiap.javaadv.backend: INFO
-    org.springframework.web: WARN
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-
-server:
-  port: ${PORT:8080}
-
-# ===================================================================
-# PERFIL TEST (Testes automatizados)
-# ===================================================================
 ---
 spring:
-  config:
-    activate:
-      on-profile: test
-
+  config.activate.on-profile: test
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=Oracle;DATABASE_TO_UPPER=false
+    url: jdbc:h2:mem:testdb;MODE=Oracle
     driver-class-name: org.h2.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-
-calculadora:
-  carbono:
-    sequestro_mensal_ton_ha: 0.5
-
-logging:
-  level:
-    br.com.fiap.javaadv.backend: WARN
+  jpa.hibernate.ddl-auto: create-drop

@@ -118,8 +118,7 @@ bootstrap-local.yaml
 # Docker
 docker-compose.override.yml
 *.log
-Dockerfile
-.dockerignore
+
 
 # Test coverage
 .coveralls.yml
