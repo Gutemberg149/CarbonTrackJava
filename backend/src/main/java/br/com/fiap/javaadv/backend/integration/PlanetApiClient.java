@@ -64,8 +64,7 @@ public class PlanetApiClient {
             log.info("🌍 Tentando chamar Planet API real...");
             log.info("🔑 API Key: {}...", apiKey.substring(0, Math.min(8, apiKey.length())));
 
-            // Como a API Planet tem custos, vamos usar cálculo por área
-            // Este é um fallback que não gasta créditos e funciona offline
+
             log.info("📐 Usando cálculo por área (recomendado para desenvolvimento)");
             return calcularPorArea(geometria);
 

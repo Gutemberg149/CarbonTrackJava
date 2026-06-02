@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
 @EnableCaching
-@EnableTransactionManagement // Explícito: garante que o Spring gerencie as transações (@Transactional)
+@EnableTransactionManagement
 public class BackendApplication {
 
 	public static void main(String[] args) {

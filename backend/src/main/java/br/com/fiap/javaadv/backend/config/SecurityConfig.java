@@ -27,21 +27,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ⚠️ IMPORTANTE: ordem importa! endpoints públicos primeiro
+                        // Endpoints públicos
                         .requestMatchers(
                                 "/auth/login",
-                                "/auth/**",
                                 "/usuarios",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
+                                "/swagger-ui/**",      // ← Adicionar
+                                "/swagger-ui.html",    // ← Adicionar
+                                "/v3/api-docs/**",     // ← Adicionar
+                                "/api-docs/**",        // ← Adicionar
                                 "/h2-console/**"
                         ).permitAll()
-                        // Qualquer outra requisição precisa de autenticação
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Permitir H2 console (apenas para desenvolvimento)
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
