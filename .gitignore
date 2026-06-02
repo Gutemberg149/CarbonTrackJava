@@ -1,1 +1,13 @@
-logs/
+# .dockerignore
+.git
+.gitignore
+.mvn
+mvnw
+mvnw.cmd
+.idea
+*.log
+*.md
+target/
+Dockerfile
+.dockerignore
+README.md
