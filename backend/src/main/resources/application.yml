@@ -27,7 +27,6 @@ spring:
         format_sql: true
         use_sql_comments: true
         jdbc.batch_size: 50
-        # Otimização: evita lock no banco para leitura
         order_inserts: true
         order_updates: true
 
@@ -47,7 +46,9 @@ spring:
   cache:
     type: simple
 
-# Configuração de rede para render
+# ===================================================================
+# CONFIGURAÇÃO DO SERVIDOR
+# ===================================================================
 server:
   port: ${PORT:8080}
   address: 0.0.0.0
@@ -58,6 +59,9 @@ server:
     include-message: always
     include-binding-errors: always
 
+# ===================================================================
+# SPRINGDOC (SWAGGER)
+# ===================================================================
 springdoc:
   api-docs:
     path: /api-docs
@@ -66,6 +70,9 @@ springdoc:
     try-it-out-enabled: true
     operations-sorter: method
 
+# ===================================================================
+# ACTUATOR
+# ===================================================================
 management:
   endpoints:
     web:
@@ -76,10 +83,14 @@ management:
     health:
       show-details: always
 
+# ===================================================================
+# LOGGING
+# ===================================================================
 logging:
   level:
     root: INFO
     br.com.fiap.javaadv.backend: DEBUG
+    org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
@@ -87,7 +98,8 @@ logging:
 # CONFIGURAÇÕES DE NEGÓCIO (Calculadora)
 # ===================================================================
 app:
-  db.seed-enabled: true
+  db:
+    seed-enabled: true
   name: CarbonTrack API
   version: 1.0.0
 
@@ -112,35 +124,107 @@ credito:
     preco_tonelada_usd: ${PRECO_CARBONO_USD:5.0}
 
 # ===================================================================
-# PERFIS
+# SEGURANÇA JWT (Chave de 256 bits - 32 caracteres)
+# ===================================================================
+security:
+  jwt:
+    secret: ${JWT_SECRET:c4r60n-tr4ck-2026-jwt-s3cr3t-k3y-256b}
+    expiration: ${JWT_EXPIRATION:86400000}  # 24 horas em milissegundos
+
+# ===================================================================
+# PERFIL DEV (H2)
 # ===================================================================
 ---
 spring:
-  config.activate.on-profile: dev
+  config:
+    activate:
+      on-profile: dev
   datasource:
     url: jdbc:h2:mem:carbontrackdb;MODE=Oracle;DATABASE_TO_UPPER=false
     driver-class-name: org.h2.Driver
+    username: sa
+    password:
   jpa:
-    hibernate.ddl-auto: create-drop
+    hibernate:
+      ddl-auto: create-drop
     show-sql: true
-  h2.console.enabled: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
+app:
+  db:
+    seed-enabled: true
+
+security:
+  jwt:
+    secret: c4r60n-tr4ck-dev-2026-jwt-s3cr3t-k3y-256b
+
+logging:
+  level:
+    br.com.fiap.javaadv.backend: DEBUG
+
+# ===================================================================
+# PERFIL PROD (ORACLE + RENDER)
+# ===================================================================
 ---
 spring:
-  config.activate.on-profile: prod
+  config:
+    activate:
+      on-profile: prod
   jpa:
     show-sql: false
-    hibernate.ddl-auto: validate
+    hibernate:
+      ddl-auto: validate
   datasource:
     hikari:
       maximum-pool-size: 20
-  logging.level.org.springframework.web: WARN
-  management.endpoints.web.exposure.include: health,info,metrics,prometheus
+      connection-timeout: 60000
 
+app:
+  db:
+    seed-enabled: false
+
+security:
+  jwt:
+    secret: ${JWT_SECVERIFIED}
+    expiration: ${JWT_EXPIRATION:86400000}
+
+logging:
+  level:
+    br.com.fiap.javaadv.backend: INFO
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+# ===================================================================
+# PERFIL TEST
+# ===================================================================
 ---
 spring:
-  config.activate.on-profile: test
+  config:
+    activate:
+      on-profile: test
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=Oracle
+    url: jdbc:h2:mem:testdb;MODE=Oracle;DATABASE_TO_UPPER=false
     driver-class-name: org.h2.Driver
-  jpa.hibernate.ddl-auto: create-drop
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+security:
+  jwt:
+    secret: c4r60n-tr4ck-test-2026-jwt-s3cr3t-k3y-256b
+
+logging:
+  level:
+    br.com.fiap.javaadv.backend: WARN
