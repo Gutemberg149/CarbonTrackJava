@@ -2,7 +2,6 @@
 # CONFIGURAÇÃO GERAL - SPRING BOOT
 # ===================================================================
 spring:
-  # Otimização para nuvem: timeout de conexão
   datasource:
     url: ${DB_URL:jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL}
     driver-class-name: oracle.jdbc.OracleDriver
@@ -47,7 +46,7 @@ spring:
     type: simple
 
 # ===================================================================
-# CONFIGURAÇÃO DO SERVIDOR
+# SERVIDOR
 # ===================================================================
 server:
   port: ${PORT:8080}
@@ -95,7 +94,7 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 # ===================================================================
-# CONFIGURAÇÕES DE NEGÓCIO (Calculadora)
+# APLICAÇÃO
 # ===================================================================
 app:
   db:
@@ -103,6 +102,9 @@ app:
   name: CarbonTrack API
   version: 1.0.0
 
+# ===================================================================
+# CALCULADORA
+# ===================================================================
 calculadora:
   carbono:
     fator_conversao: 0.47
@@ -116,6 +118,9 @@ calculadora:
       pastagem: 0.3
       agricultura: 0.4
 
+# ===================================================================
+# CRÉDITOS
+# ===================================================================
 credito:
   registro:
     emissao_automatica: true
@@ -124,15 +129,15 @@ credito:
     preco_tonelada_usd: ${PRECO_CARBONO_USD:5.0}
 
 # ===================================================================
-# SEGURANÇA JWT (Chave de 256 bits - 32 caracteres)
+# JWT
 # ===================================================================
 security:
   jwt:
     secret: ${JWT_SECRET:c4r60n-tr4ck-2026-jwt-s3cr3t-k3y-256b}
-    expiration: ${JWT_EXPIRATION:86400000}  # 24 horas em milissegundos
+    expiration: ${JWT_EXPIRATION:86400000}
 
 # ===================================================================
-# PERFIL DEV (H2)
+# PERFIL DEV
 # ===================================================================
 ---
 spring:
@@ -166,7 +171,7 @@ logging:
     br.com.fiap.javaadv.backend: DEBUG
 
 # ===================================================================
-# PERFIL PROD (ORACLE + RENDER)
+# PERFIL PROD
 # ===================================================================
 ---
 spring:
@@ -188,7 +193,7 @@ app:
 
 security:
   jwt:
-    secret: ${JWT_SECVERIFIED}
+    secret: ${JWT_SECRET:c4r60n-tr4ck-2026-jwt-s3cr3t-k3y-256b}
     expiration: ${JWT_EXPIRATION:86400000}
 
 logging:
