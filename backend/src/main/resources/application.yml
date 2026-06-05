@@ -165,15 +165,15 @@ security:
     audience: carbontrack-client
 
 # ===================================================================
-# PLANET API - CREDENCIAIS VÁLIDAS
+# PLANET API - CREDENCIAIS COM FALLBACK
 # ===================================================================
 planet:
   enabled: true
   auth:
-    client_id: 7c0d34d7-5bcc-4250-a255-d42e4727c41b
-    client_secret: ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H
-    api_key: PLAKbac00399a1094547badda8caae30f3e4
-    organization: WS_014e6947-4715-4a8c-bacd-29b2d05dc61a
+    client_id: ${PLANET_CLIENT_ID:7c0d34d7-5bcc-4250-a255-d42e4727c41b}
+    client_secret: ${PLANET_CLIENT_SECRET:ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H}
+    api_key: ${PLANET_API_KEY:PLAKbac00399a1094547badda8caae30f3e4}
+    organization: ${PLANET_ORGANIZATION:WS_014e6947-4715-4a8c-bacd-29b2d05dc61a}
   api:
     url: https://api.planet.com/data/v1
     timeout: 30000
@@ -181,7 +181,7 @@ planet:
       max-attempts: 3
       backoff-delay: 1000
   mock:
-    enabled: false
+    enabled: ${PLANET_MOCK_ENABLED:false}
     default-biomassa: 150.0
     default-ndvi: 0.65
   endpoints:
@@ -214,12 +214,12 @@ geospatial:
 
 # ===================================================================
 # ===================================================================
-# PERFIS DE AMBIENTE - TODOS COM MODO REAL
+# PERFIS DE AMBIENTE
 # ===================================================================
 # ===================================================================
 
 # -------------------------------------------------------------------
-# PERFIL: dev (Desenvolvimento com H2 e API REAL)
+# PERFIL: dev (Desenvolvimento com H2)
 # -------------------------------------------------------------------
 ---
 spring:
@@ -255,15 +255,14 @@ security:
     secret: c4r60n-tr4ck-dev-2026-jwt-s3cr3t-k3y-256b
     expiration: 86400000
 
-# MODO REAL ATIVADO COM CREDENCIAIS VÁLIDAS
 planet:
   mock:
     enabled: false
   auth:
-    client_id: 7c0d34d7-5bcc-4250-a255-d42e4727c41b
-    client_secret: ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H
-    api_key: PLAKbac00399a1094547badda8caae30f3e4
-    organization: WS_014e6947-4715-4a8c-bacd-29b2d05dc61a
+    client_id: ${PLANET_CLIENT_ID:7c0d34d7-5bcc-4250-a255-d42e4727c41b}
+    client_secret: ${PLANET_CLIENT_SECRET:ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H}
+    api_key: ${PLANET_API_KEY:PLAKbac00399a1094547badda8caae30f3e4}
+    organization: ${PLANET_ORGANIZATION:WS_014e6947-4715-4a8c-bacd-29b2d05dc61a}
 
 logging:
   level:
@@ -275,7 +274,7 @@ server:
   port: 8080
 
 # -------------------------------------------------------------------
-# PERFIL: prod (Produção com Oracle e API REAL)
+# PERFIL: prod (Produção com Oracle)
 # -------------------------------------------------------------------
 ---
 spring:
@@ -310,15 +309,14 @@ security:
     secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:86400000}
 
-# MODO REAL ATIVADO COM CREDENCIAIS VÁLIDAS
 planet:
   auth:
-    client_id: ${PLANET_CLIENT_ID}
-    client_secret: ${PLANET_CLIENT_SECRET}
-    api_key: ${PLANET_API_KEY}
-    organization: ${PLANET_ORGANIZATION}
+    client_id: ${PLANET_CLIENT_ID:7c0d34d7-5bcc-4250-a255-d42e4727c41b}
+    client_secret: ${PLANET_CLIENT_SECRET:ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H}
+    api_key: ${PLANET_API_KEY:PLAKbac00399a1094547badda8caae30f3e4}
+    organization: ${PLANET_ORGANIZATION:WS_014e6947-4715-4a8c-bacd-29b2d05dc61a}
   mock:
-    enabled: false
+    enabled: ${PLANET_MOCK_ENABLED:false}
 
 logging:
   level:
@@ -378,7 +376,7 @@ security:
 
 planet:
   mock:
-    enabled: false
+    enabled: true
   auth:
     client_id: test-client-id
     client_secret: test-client-secret
@@ -424,15 +422,14 @@ security:
   jwt:
     secret: c4r60n-tr4ck-local-2026-jwt-s3cr3t-k3y-256b
 
-# MODO REAL ATIVADO COM CREDENCIAIS VÁLIDAS
 planet:
   mock:
     enabled: false
   auth:
-    client_id: 7c0d34d7-5bcc-4250-a255-d42e4727c41b
-    client_secret: ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H
-    api_key: PLAKbac00399a1094547badda8caae30f3e4
-    organization: WS_014e6947-4715-4a8c-bacd-29b2d05dc61a
+    client_id: ${PLANET_CLIENT_ID:7c0d34d7-5bcc-4250-a255-d42e4727c41b}
+    client_secret: ${PLANET_CLIENT_SECRET:ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H}
+    api_key: ${PLANET_API_KEY:PLAKbac00399a1094547badda8caae30f3e4}
+    organization: ${PLANET_ORGANIZATION:WS_014e6947-4715-4a8c-bacd-29b2d05dc61a}
 
 logging:
   level:
@@ -444,7 +441,7 @@ server:
   port: 8080
 
 # -------------------------------------------------------------------
-# PERFIL: mock (Forçar modo MOCK - ÚNICO com dados falsos)
+# PERFIL: mock (Forçar modo MOCK)
 # -------------------------------------------------------------------
 ---
 spring:
@@ -484,12 +481,12 @@ app:
 
 planet:
   mock:
-    enabled: false
+    enabled: ${PLANET_MOCK_ENABLED:false}
   auth:
-    client_id: ${PLANET_CLIENT_ID}
-    client_secret: ${PLANET_CLIENT_SECRET}
-    api_key: ${PLANET_API_KEY}
-    organization: ${PLANET_ORGANIZATION}
+    client_id: ${PLANET_CLIENT_ID:7c0d34d7-5bcc-4250-a255-d42e4727c41b}
+    client_secret: ${PLANET_CLIENT_SECRET:ZpPL6SfDIpHAsOFTAau72tfLg3vJC67H}
+    api_key: ${PLANET_API_KEY:PLAKbac00399a1094547badda8caae30f3e4}
+    organization: ${PLANET_ORGANIZATION:WS_014e6947-4715-4a8c-bacd-29b2d05dc61a}
 
 logging:
   level:
