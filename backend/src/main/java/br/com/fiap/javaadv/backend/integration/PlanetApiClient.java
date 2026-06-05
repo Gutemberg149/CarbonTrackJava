@@ -21,35 +21,33 @@ public class PlanetApiClient {
     @Value("${planet.api.url:https://api.planet.com/data/v1}")
     private String apiUrl;
 
-    @Value("${planet.auth.api_key}")
+
+    @Value("${planet.auth.api_key:PLAKbac00399a1094547badda8caae30f3e4}")
     private String apiKey;
 
-    @Value("${planet.mock.enabled:false}")
+    @Value("${planet.mock.enabled:true}")
     private boolean mockEnabled;
 
-    // --- SOBRECARGA 1: Compatibilidade (resolvendo o erro dos outros arquivos) ---
     public Map<String, Object> calcularBiomassa(Geometry geometria) {
-        // Cálculo básico para evitar que o código quebre onde não passamos a área
         double areaHa = Math.abs(geometria.getArea() * 111320 * 111320 / 10000.0);
         return calcularBiomassa(geometria, areaHa);
     }
 
-
     public Map<String, Object> calcularBiomassa(Geometry geometria, double areaHa) {
         if (geometria == null) return criarErro("Geometria nula");
-        if (mockEnabled) return executarMock(areaHa);
+
+        // Se mock estiver ativo OU se a apiKey estiver vazia, usa o mock/fallback
+        if (mockEnabled || apiKey.isEmpty()) {
+            log.warn("⚠️ API Key ausente ou Mock habilitado. Usando modo de segurança.");
+            return mockEnabled ? executarMock(areaHa) : executarFallback(areaHa);
+        }
 
         return executarChamadaReal(geometria, areaHa)
-                .orElseGet(() -> {
-                    log.warn("🔄 Falha na API real. Aplicando fallback.");
-                    return executarFallback(areaHa);
-                });
+                .orElseGet(() -> executarFallback(areaHa));
     }
 
-    @SuppressWarnings("unchecked")
     private Optional<Map<String, Object>> executarChamadaReal(Geometry geometria, double areaHa) {
         String endpoint = apiUrl + "/quick-search";
-
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "api-key " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -57,59 +55,42 @@ public class PlanetApiClient {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(montarFiltro(geometria), headers);
 
         try {
-            log.info("📡 Iniciando chamada REAL para Planet API...");
             ResponseEntity<Map> response = restTemplate.postForEntity(endpoint, request, Map.class);
             Map<String, Object> body = response.getBody();
 
             if (body != null && body.containsKey("features")) {
-                List<Map<String, Object>> features = (List<Map<String, Object>>) body.get("features");
-
+                List<?> features = (List<?>) body.get("features");
                 if (features != null && !features.isEmpty()) {
-                    Map<String, Object> properties = (Map<String, Object>) features.get(0).get("properties");
+                    Map<?, ?> firstFeature = (Map<?, ?>) features.get(0);
+                    Map<?, ?> props = (Map<?, ?>) firstFeature.get("properties");
 
                     return Optional.of(Map.of(
-                            "carbonoTotalTon", realizarCalculoFinal(areaHa, properties),
+                            "carbonoTotalTon", realizarCalculoFinal(areaHa, props),
                             "metodo", "REAL_SATELLITE_DATA",
-                            "dataImagem", properties.getOrDefault("acquired", LocalDate.now().toString()),
-                            "fonte", properties.getOrDefault("provider", "planetscope"),
                             "status", "SUCCESS"
                     ));
                 }
             }
-            return Optional.empty();
         } catch (Exception e) {
             log.error("❌ Erro na integração Planet API: {}", e.getMessage());
-            return Optional.empty();
         }
+        return Optional.empty();
     }
 
-    private double realizarCalculoFinal(double areaHa, Map<String, Object> props) {
-        Object visObj = props.getOrDefault("visible_percent", 50.0);
-        double visibilidade = (visObj instanceof Number) ? ((Number) visObj).doubleValue() : 50.0;
-
-        double visibilidadeAjustada = (visibilidade < 10.0) ? 50.0 : visibilidade;
-
-        double fatorCarbono = 70.5;
-        double resultado = areaHa * (visibilidadeAjustada / 100.0) * fatorCarbono;
-
-        log.info("📊 Cálculo: {} ha | Visibilidade: {}% | Resultado: {} tCO2",
-                String.format("%.2f", areaHa), visibilidadeAjustada, String.format("%.2f", resultado));
-
-        return resultado;
+    private double realizarCalculoFinal(double areaHa, Map<?, ?> props) {
+        double visibilidade = (props.get("visible_percent") instanceof Number n) ? n.doubleValue() : 50.0;
+        return areaHa * (Math.max(visibilidade, 10.0) / 100.0) * 70.5;
     }
 
     private Map<String, Object> montarFiltro(Geometry geometria) {
         return Map.of(
                 "item_types", List.of("PSScene"),
-                "filter", Map.of(
-                        "type", "AndFilter",
-                        "config", List.of(
-                                Map.of("type", "GeometryFilter", "field_name", "geometry",
-                                        "config", Map.of("type", "Polygon", "coordinates", List.of(converterCoordenadas(geometria)))),
-                                Map.of("type", "DateRangeFilter", "field_name", "acquired",
-                                        "config", Map.of("gte", LocalDate.now().minusMonths(6).toString() + "T00:00:00Z"))
-                        )
-                )
+                "filter", Map.of("type", "AndFilter", "config", List.of(
+                        Map.of("type", "GeometryFilter", "field_name", "geometry", "config",
+                                Map.of("type", "Polygon", "coordinates", List.of(converterCoordenadas(geometria)))),
+                        Map.of("type", "DateRangeFilter", "field_name", "acquired", "config",
+                                Map.of("gte", LocalDate.now().minusMonths(6).toString() + "T00:00:00Z"))
+                ))
         );
     }
 
@@ -120,11 +101,7 @@ public class PlanetApiClient {
     }
 
     private Map<String, Object> executarFallback(double areaHa) {
-        return Map.of(
-                "carbonoTotalTon", areaHa * 62.15,
-                "metodo", "FALLBACK_CALCULATION",
-                "status", "FALLBACK"
-        );
+        return Map.of("carbonoTotalTon", areaHa * 62.15, "metodo", "FALLBACK_CALCULATION", "status", "FALLBACK");
     }
 
     private Map<String, Object> executarMock(double areaHa) {
