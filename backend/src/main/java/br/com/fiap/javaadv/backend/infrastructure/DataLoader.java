@@ -3,6 +3,7 @@ package br.com.fiap.javaadv.backend.infrastructure;
 import br.com.fiap.javaadv.backend.datasource.repositories.*;
 import br.com.fiap.javaadv.backend.domainmodel.embeddables.Endereco;
 import br.com.fiap.javaadv.backend.domainmodel.entities.*;
+import br.com.fiap.javaadv.backend.integration.PlanetApiClient;
 import br.com.fiap.javaadv.backend.services.CalculadoraCarbonoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Profile;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -27,6 +29,7 @@ public class DataLoader {
     private final PropriedadeRepository propriedadeRepository;
     private final CreditoCarbonoRepository creditoRepository;
     private final CalculadoraCarbonoService calculadoraService;
+    private final PlanetApiClient planetApiClient;  // ✅ ADICIONADO
 
     @Bean
     public CommandLineRunner initDatabase() {
@@ -66,7 +69,7 @@ public class DataLoader {
             log.info("📐 Geometria definida: {}", geometriaWkt);
 
             // ============================================
-            // 3. Converter para Polygon e calcular
+            // 3. Converter para Polygon
             // ============================================
             Polygon polygon = converterWktParaPolygon(geometriaWkt);
 
@@ -81,7 +84,11 @@ public class DataLoader {
             int mesAquisicao = hoje.getMonthValue();
 
             double areaHectares = calculadoraService.calcularAreaHectares(polygon);
-            double carbonoEstimado = calculadoraService.calcularEstoquePorTempo(polygon, anoAquisicao, mesAquisicao);
+
+            // ============================================
+            // 4. OBTER CARBONO DO SATÉLITE (MODO REAL)
+            // ============================================
+            double carbonoEstimado = obterCarbonoDoSatelite(polygon, anoAquisicao, mesAquisicao, areaHectares);
 
             log.info("📊 Cálculos realizados:");
             log.info("   📐 Área: {} hectares", String.format("%.2f", areaHectares));
@@ -89,7 +96,7 @@ public class DataLoader {
             log.info("   🌿 Carbono acumulado: {} tCO₂", String.format("%.2f", carbonoEstimado));
 
             // ============================================
-            // 4. Criar objeto Endereco simplificado
+            // 5. Criar objeto Endereco simplificado
             // ============================================
             Endereco endereco = Endereco.builder()
                     .endereco("Estrada Rural, 100")
@@ -99,7 +106,7 @@ public class DataLoader {
                     .build();
 
             // ============================================
-            // 5. Criar propriedade
+            // 6. Criar propriedade
             // ============================================
             Propriedade propriedade = Propriedade.builder()
                     .nome("Fazenda Mata Atlântica")
@@ -116,7 +123,7 @@ public class DataLoader {
             log.info("✅ Propriedade criada: {} (ID: {})", propriedade.getNome(), propriedade.getId());
 
             // ============================================
-            // 6. Criar crédito de carbono
+            // 7. Criar crédito de carbono
             // ============================================
             CreditoCarbono credito = CreditoCarbono.builder()
                     .quantidade(carbonoEstimado)
@@ -130,7 +137,7 @@ public class DataLoader {
                     credito.getId());
 
             // ============================================
-            // 7. Resumo final
+            // 8. Resumo final
             // ============================================
             log.info("========================================");
             log.info("🎉 SEED CONCLUÍDO COM SUCESSO!");
@@ -147,6 +154,52 @@ public class DataLoader {
         } catch (Exception e) {
             log.error("❌ Erro ao inserir dados de seed: ", e);
         }
+    }
+
+    /**
+     * Obtém carbono do satélite (API REAL) ou fallback
+     */
+    private double obterCarbonoDoSatelite(Polygon polygon, int anoAquisicao, int mesAquisicao, double areaHectares) {
+        log.info("🛰️ Iniciando consulta ao satélite para dados REAIS...");
+
+        try {
+            // Tentar obter dados REAIS do satélite
+            Map<String, Object> dadosSatelite = planetApiClient.calcularBiomassa(polygon);
+
+            // Verificar se veio dados reais (não mock)
+            Boolean isMock = (Boolean) dadosSatelite.getOrDefault("mock", false);
+            Boolean isErro = (Boolean) dadosSatelite.getOrDefault("erro", false);
+
+            if (!isMock && !isErro && dadosSatelite.containsKey("carbonoTotalTon")) {
+                Double carbonoReal = (Double) dadosSatelite.get("carbonoTotalTon");
+                if (carbonoReal != null && carbonoReal > 0) {
+                    log.info("✅✅✅ Dados REAIS do satélite obtidos com sucesso!");
+                    log.info("   🌿 Carbono do satélite: {} tCO₂", String.format("%.2f", carbonoReal));
+                    log.info("   🛰️ Fonte: {}", dadosSatelite.get("fonte"));
+                    log.info("   📊 Método: {}", dadosSatelite.get("metodo"));
+                    return carbonoReal;
+                }
+            }
+
+            log.warn("⚠️ Satélite retornou dados inválidos ou mock, usando fallback");
+
+        } catch (Exception e) {
+            log.error("❌ Erro ao consultar satélite: {}", e.getMessage());
+            log.warn("⚠️ Usando cálculo fallback");
+        }
+
+
+        double carbonoFallback = calculadoraService.calcularEstoquePorTempo(polygon, anoAquisicao, mesAquisicao);
+
+        // Se fallback for muito baixo (valor mínimo), usar cálculo por área
+        if (carbonoFallback <= 1.0) {
+            carbonoFallback = areaHectares * 150.0 * 0.47;
+            log.info("📊 Usando cálculo por área (fallback): {} tCO₂", String.format("%.2f", carbonoFallback));
+        } else {
+            log.info("📊 Usando cálculo por tempo de posse (fallback): {} tCO₂", String.format("%.2f", carbonoFallback));
+        }
+
+        return carbonoFallback;
     }
 
     /**
