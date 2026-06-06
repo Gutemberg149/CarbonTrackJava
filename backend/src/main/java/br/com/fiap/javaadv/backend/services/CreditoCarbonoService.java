@@ -195,7 +195,7 @@ public class CreditoCarbonoService {
         return new CreditoCarbonoResponseDTO(
                 c.getId(),
                 c.getQuantidade(),
-                c.getDataEmissao(),
+                c.getDataEmissao().toString(),
                 c.getPropriedade().getNome()
         );
     }
