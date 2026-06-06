@@ -30,7 +30,7 @@ public class UserService {
             throw new RuntimeException("Email já cadastrado: " + dto.email());
         }
 
-        // Codificar a senha antes de salvar
+
         User user = User.builder()
                 .nome(dto.nome())
                 .email(dto.email())
