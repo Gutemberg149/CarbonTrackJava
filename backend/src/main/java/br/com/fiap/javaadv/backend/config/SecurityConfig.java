@@ -24,12 +24,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> {}) // Adicionado para garantir que o CorsConfig seja respeitado
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/**",            // Alterado para incluir tudo dentro de /auth
+                                "/",                    // ✅ ADD THIS - root path
+                                "/auth/**",
                                 "/usuarios",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
