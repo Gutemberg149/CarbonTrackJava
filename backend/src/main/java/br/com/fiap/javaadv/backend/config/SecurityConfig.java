@@ -32,7 +32,7 @@ public class SecurityConfig {
                                 "/",                    // ✅ ADD THIS - root path
                                 "/auth/**",
                                 "/usuarios",
-                                "/creditos",
+                                "/creditos/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
