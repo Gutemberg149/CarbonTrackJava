@@ -4,6 +4,7 @@ import br.com.fiap.javaadv.backend.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // Importante adicionar este import
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,21 +29,24 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Endpoints totalmente públicos
                         .requestMatchers(
-                                "/",                    // ✅ ADD THIS - root path
+                                "/",
                                 "/auth/**",
                                 "/usuarios",
-                                "/creditos/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
                                 "/h2-console/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/creditos/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+        // Permite o uso do H2 Console (frames)
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
