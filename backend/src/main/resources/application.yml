@@ -344,9 +344,6 @@ server:
   error:
     include-stacktrace: never
 
-# -------------------------------------------------------------------
-# PERFIL: test (Testes Automatizados)
-# -------------------------------------------------------------------
 ---
 spring:
   config:

@@ -14,7 +14,7 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Refatorado para garantir que o Spring resolva o placeholder com fallback
+    //Garantir que o Spring resolva o placeholder com fallback
     @Value("${security.jwt.secret:chave-super-secreta-para-jwt-2026-carbon-track}")
     private String secret;
 
@@ -22,7 +22,7 @@ public class JwtService {
     private Long expiration;
 
     private SecretKey getSigningKey() {
-        // Garantimos que a chave tenha o tamanho mínimo exigido pelo HMAC-SHA (256 bits/32 bytes)
+        // Garantir que a chave tenha o tamanho mínimo exigido pelo HMAC-SHA (256 bits/32 bytes)
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }

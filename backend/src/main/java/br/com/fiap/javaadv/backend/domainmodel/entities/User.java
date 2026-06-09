@@ -41,7 +41,7 @@ public class User {
 
     /**
      * Criptografa a senha automaticamente antes de salvar no banco
-     * O método verifica se a senha já não está criptografada (não começa com $2a$)
+     * Verifica se a senha já não está criptografada (não começa com $2a$)
      */
     @PrePersist
     @PreUpdate

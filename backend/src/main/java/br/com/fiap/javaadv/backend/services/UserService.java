@@ -34,7 +34,7 @@ public class UserService {
         User user = User.builder()
                 .nome(dto.nome())
                 .email(dto.email())
-                .senha(passwordEncoder.encode(dto.senha())) // CODIFICAR A SENHA
+                .senha(passwordEncoder.encode(dto.senha()))
                 .build();
 
         User saved = repository.save(user);
@@ -63,7 +63,6 @@ public class UserService {
                 .map(existente -> {
                     existente.setNome(dto.nome());
                     existente.setEmail(dto.email());
-                    // Só atualiza a senha se foi fornecida
                     if (dto.senha() != null && !dto.senha().isEmpty()) {
                         existente.setSenha(passwordEncoder.encode(dto.senha()));
                     }
