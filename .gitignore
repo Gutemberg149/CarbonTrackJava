@@ -6,7 +6,6 @@ mvnw
 mvnw.cmd
 .idea
 *.log
-*.md
 target/
 Dockerfile
 .dockerignore
