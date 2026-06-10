@@ -27,7 +27,7 @@ public class CreditoCarbonoService {
     private final CreditoCarbonoRepository creditoCarbonoRepository;
     private final PropriedadeRepository propRepository;
     private final CalculadoraCarbonoService calculadoraService;
-    private final PlanetApiClient planetApiClient;  // ✅ ADICIONADO
+    private final PlanetApiClient planetApiClient;
 
     @Transactional
     public CreditoCarbonoResponseDTO registrar(CreditoCarbonoRequestDTO dto) {

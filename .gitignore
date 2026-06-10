@@ -10,4 +10,3 @@ mvnw.cmd
 target/
 Dockerfile
 .dockerignore
-README.md
